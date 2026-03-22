@@ -60,7 +60,7 @@ ALL_TAGS = [
 # ---------------------------------------------------------------------------
 SCORE_BASE = 50.0
 SCORE_WEATHER_INDOOR_BONUS = 20.0
-SCORE_DONE_PENALTY = -50.0
+SCORE_DONE_PENALTY = -8.0  # Leicht runterstufen, nicht ausblenden — man geht gern nochmal hin
 SCORE_SPECIAL_BONUS = 15.0
 SCORE_FRESHNESS_BONUS = 10.0         # fuer Eintraege < 3 Tage alt
 SCORE_DISTANCE_PENALTY_PER_5KM = -1.0

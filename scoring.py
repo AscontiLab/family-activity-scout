@@ -49,6 +49,23 @@ def compute_scores(
 
     scored = []
     for act in activities:
+        # Qualitaetsfilter: Generische Eintraege, Blogposts, Linklisten raus
+        title = act.get("title", "")
+        title_lower = title.lower()
+        if len(title) < 5:
+            continue
+        # Datums-Eintraege
+        if any(title.startswith(d) for d in ["Sonntag ", "Samstag ", "Montag ", "Dienstag ", "Mittwoch ", "Donnerstag ", "Freitag "]):
+            continue
+        # Generische Listikel / Blogposts (keine echten Events)
+        skip_patterns = [
+            "top-adressen", "die besten", "die 10 ", "die 5 ", "tipps für",
+            "tipps fürs", "tipps im ", "kostenlos in", "mehr", "alle ",
+            "newsletter", "gewinnspiel", "mini-tipps",
+        ]
+        if any(p in title_lower for p in skip_patterns):
+            continue
+
         # Altersfilter
         age_min = act.get("age_min", 0) or 0
         age_max = act.get("age_max", 99) or 99
@@ -74,9 +91,9 @@ def compute_scores(
         if is_hot and "wasser" in tags:
             score += 15.0
 
-        # 3. Done Penalty
+        # 3. Done: Leicht runterstufen, nicht ausblenden
         if act["id"] in done_ids:
-            score += SCORE_DONE_PENALTY
+            score += SCORE_DONE_PENALTY  # -8 statt -50
 
         # 4. Event vs. Permanent: Einmalige Events bevorzugen
         if act.get("is_permanent"):
@@ -125,9 +142,12 @@ def compute_scores(
 
 def get_weekend_mix(scored_activities: list[dict], count: int = 10) -> list[dict]:
     """
-    Waehlt einen Mix aus Vorschlaegen:
-    Prioritaet: Zeitlich begrenzte Events > Geheimtipps > 1 Tagesausflug > Dauerhafte als Auffueller.
+    Waehlt einen diversen Mix aus Vorschlaegen.
+    Max 2 pro Kategorie (Theater, Museum, etc.) fuer Vielfalt.
+    Prioritaet: Events > Tagesausflug > Dauerhafte.
     """
+    MAX_PER_CATEGORY = 2
+
     events = [a for a in scored_activities if not a.get("is_permanent")]
     day_trips = [a for a in scored_activities
                  if a.get("is_permanent") and (a.get("distance_km") or 0) > 30]
@@ -135,21 +155,71 @@ def get_weekend_mix(scored_activities: list[dict], count: int = 10) -> list[dict
 
     mix: list[dict] = []
     seen_ids: set[int] = set()
+    category_counts: dict[str, int] = {}  # Diversity-Zaehler
 
-    def _add(source: list[dict], n: int):
-        for item in source:
-            if len(mix) >= count or n <= 0:
-                return
+    def _primary_category(item: dict) -> str:
+        """Bestimmt die Hauptkategorie einer Aktivitaet."""
+        tags = item.get("tags", [])
+        title = (item.get("title", "") + " " + (item.get("description", "") or "")).lower()
+        # Spezifische Erkennung
+        if any(w in title for w in ["theater", "puppentheater", "maerchen", "aufführung", "märchen"]):
+            return "theater"
+        if any(w in title for w in ["museum", "ausstellung"]):
+            return "museum"
+        if any(w in title for w in ["klettern", "hochseil", "kletterpark"]):
+            return "klettern"
+        if any(w in title for w in ["zoo", "tierpark", "bauernhof", "tiere"]):
+            return "tiere"
+        # Fallback auf ersten Tag
+        if "theater" in tags:
+            return "theater"
+        if "kreativ" in tags:
+            return "kreativ"
+        if "outdoor" in tags:
+            return "outdoor"
+        if "sport" in tags:
+            return "sport"
+        return tags[0] if tags else "sonstiges"
+
+    def _try_add(item: dict) -> bool:
+        if item["id"] in seen_ids:
+            return False
+        cat = _primary_category(item)
+        if category_counts.get(cat, 0) >= MAX_PER_CATEGORY:
+            return False
+        mix.append(item)
+        seen_ids.add(item["id"])
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+        return True
+
+    # 1. Diverse Events zuerst
+    for item in events:
+        if len(mix) >= count - 2:
+            break
+        _try_add(item)
+
+    # 2. Ein Brandenburg-Tagesausflug
+    for item in day_trips:
+        if len(mix) >= count - 1:
+            break
+        if item["id"] not in seen_ids:
+            mix.append(item)
+            seen_ids.add(item["id"])
+            break
+
+    # 3. Auffuellen mit Dauerhaften (andere Kategorien bevorzugt)
+    for item in permanent:
+        if len(mix) >= count:
+            break
+        _try_add(item)
+
+    # 4. Falls immer noch nicht voll: Diversity-Limit lockern
+    if len(mix) < count:
+        for item in scored_activities:
+            if len(mix) >= count:
+                break
             if item["id"] not in seen_ids:
                 mix.append(item)
                 seen_ids.add(item["id"])
-                n -= 1
-
-    # 1. Einmalige Events zuerst (so viele wie moeglich)
-    _add(events, max(count - 2, 3))
-    # 2. Ein Brandenburg-Tagesausflug
-    _add(day_trips, 1)
-    # 3. Auffuellen mit Dauerhaften
-    _add(permanent, count - len(mix))
 
     return mix[:count]
