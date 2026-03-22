@@ -78,9 +78,14 @@ def compute_scores(
         if act["id"] in done_ids:
             score += SCORE_DONE_PENALTY
 
-        # 4. Special Bonus
-        if act.get("is_special"):
-            score += SCORE_SPECIAL_BONUS
+        # 4. Event vs. Permanent: Einmalige Events bevorzugen
+        if act.get("is_permanent"):
+            score -= 25.0  # Dauerhafte runterstufen — kann man jederzeit machen
+        else:
+            score += 20.0  # Zeitlich begrenzte Events hochstufen
+
+        if act.get("is_special") and not act.get("is_permanent"):
+            score += SCORE_SPECIAL_BONUS  # Nur nicht-permanente Specials boosten
 
         # 5. Freshness Bonus (neu gescrapt in den letzten 3 Tagen)
         scraped = act.get("scraped_at", "")
@@ -118,39 +123,33 @@ def compute_scores(
     return scored
 
 
-def get_weekend_mix(scored_activities: list[dict], count: int = 5) -> list[dict]:
+def get_weekend_mix(scored_activities: list[dict], count: int = 10) -> list[dict]:
     """
     Waehlt einen Mix aus Vorschlaegen:
-    2 Geheimtipps/Besondere + 2 Events diese Woche + 1 Brandenburg-Tagesausflug.
+    Prioritaet: Zeitlich begrenzte Events > Geheimtipps > 1 Tagesausflug > Dauerhafte als Auffueller.
     """
-    specials = [a for a in scored_activities if a.get("is_special")]
-    events = [a for a in scored_activities
-              if not a.get("is_permanent") and not a.get("is_special")]
+    events = [a for a in scored_activities if not a.get("is_permanent")]
     day_trips = [a for a in scored_activities
-                 if (a.get("distance_km") or 0) > 30]
+                 if a.get("is_permanent") and (a.get("distance_km") or 0) > 30]
+    permanent = [a for a in scored_activities if a.get("is_permanent")]
 
     mix: list[dict] = []
     seen_ids: set[int] = set()
 
     def _add(source: list[dict], n: int):
         for item in source:
-            if len(mix) >= count:
+            if len(mix) >= count or n <= 0:
                 return
-            if item["id"] not in seen_ids and n > 0:
+            if item["id"] not in seen_ids:
                 mix.append(item)
                 seen_ids.add(item["id"])
                 n -= 1
 
-    _add(specials, 2)
-    _add(events, 2)
+    # 1. Einmalige Events zuerst (so viele wie moeglich)
+    _add(events, max(count - 2, 3))
+    # 2. Ein Brandenburg-Tagesausflug
     _add(day_trips, 1)
-
-    # Auffuellen falls nicht genug
-    for item in scored_activities:
-        if len(mix) >= count:
-            break
-        if item["id"] not in seen_ids:
-            mix.append(item)
-            seen_ids.add(item["id"])
+    # 3. Auffuellen mit Dauerhaften
+    _add(permanent, count - len(mix))
 
     return mix[:count]
