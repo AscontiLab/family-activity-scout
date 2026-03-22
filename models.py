@@ -185,14 +185,29 @@ def get_activity_by_id(activity_id: int, db_path: Path = DB_PATH) -> dict | None
 
 
 def deactivate_expired(db_path: Path = DB_PATH) -> int:
-    """Setzt abgelaufene Events auf active=0."""
+    """Setzt abgelaufene Events auf active=0.
+
+    - Events mit date_end < heute → deaktivieren
+    - Events ohne Datum die aelter als 14 Tage sind → deaktivieren
+    - Permanente Attraktionen bleiben immer aktiv
+    """
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
     with _connect(db_path) as conn:
-        cur = conn.execute(
-            "UPDATE activities SET active = 0 WHERE date_end IS NOT NULL AND date_end < ? AND active = 1",
+        # Events mit abgelaufenem Enddatum
+        c1 = conn.execute(
+            "UPDATE activities SET active = 0 "
+            "WHERE date_end IS NOT NULL AND date_end < ? AND active = 1",
             (today,),
-        )
-        return cur.rowcount
+        ).rowcount
+        # Events ohne Datum, aelter als 14 Tage, nicht permanent
+        c2 = conn.execute(
+            "UPDATE activities SET active = 0 "
+            "WHERE date_end IS NULL AND date_start IS NULL "
+            "AND is_permanent = 0 AND scraped_at < ? AND active = 1",
+            (cutoff,),
+        ).rowcount
+        return c1 + c2
 
 
 # ---------------------------------------------------------------------------

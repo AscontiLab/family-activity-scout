@@ -161,24 +161,41 @@ def get_weekend_mix(scored_activities: list[dict], count: int = 10) -> list[dict
         """Bestimmt die Hauptkategorie einer Aktivitaet."""
         tags = item.get("tags", [])
         title = (item.get("title", "") + " " + (item.get("description", "") or "")).lower()
+        source = item.get("source", "")
+
+        # berlin.de/tickets/kinder liefert fast nur Auffuehrungen
+        if source == "berlin_de" and set(tags) <= {"indoor", "kultur"}:
+            return "auffuehrung"
+
         # Spezifische Erkennung
-        if any(w in title for w in ["theater", "puppentheater", "maerchen", "aufführung", "märchen"]):
-            return "theater"
+        theater_words = [
+            "theater", "puppentheater", "maerchen", "märchen", "aufführung",
+            "musical", "clown", "zirkus", "galli", "bühne",
+            # Bekannte Maerchen-Titel
+            "rumpelstilzchen", "aschenputtel", "schneewittchen",
+            "rotkäppchen", "hänsel", "hans im glück", "gestiefelte kater",
+            "bremer stadtmusikanten", "dornröschen", "froschkönig", "frog prince",
+        ]
+        if any(w in title for w in theater_words):
+            return "auffuehrung"
         if any(w in title for w in ["museum", "ausstellung"]):
             return "museum"
-        if any(w in title for w in ["klettern", "hochseil", "kletterpark"]):
+        if any(w in title for w in ["klettern", "hochseil", "kletterpark", "bouldern"]):
             return "klettern"
         if any(w in title for w in ["zoo", "tierpark", "bauernhof", "tiere"]):
             return "tiere"
-        # Fallback auf ersten Tag
-        if "theater" in tags:
-            return "theater"
         if "kreativ" in tags:
             return "kreativ"
+        if "abenteuer" in tags:
+            return "abenteuer"
         if "outdoor" in tags:
             return "outdoor"
         if "sport" in tags:
             return "sport"
+        if "natur" in tags:
+            return "natur"
+        if "wasser" in tags:
+            return "wasser"
         return tags[0] if tags else "sonstiges"
 
     def _try_add(item: dict) -> bool:
