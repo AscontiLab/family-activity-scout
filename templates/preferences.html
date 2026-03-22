@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Profil — Family Scout{% endblock %}
+{% block content %}
+
+<h1>👨‍👩‍👧‍👧 Familien-Profil</h1>
+
+<div class="card p-6 mb-6">
+    <h2>Interessen-Gewichtung</h2>
+    <p class="text-muted">Stellt ein, was euch mehr oder weniger interessiert. Der Scout lernt auch automatisch aus eurem Feedback.</p>
+
+    <form id="prefs-form" class="prefs-grid">
+        {% for tag, weight in preferences.items() %}
+        <div class="pref-item">
+            <label for="pref-{{ tag }}">{{ tag }}</label>
+            <input type="range" id="pref-{{ tag }}" name="{{ tag }}"
+                   min="0.1" max="3.0" step="0.1" value="{{ weight }}"
+                   oninput="this.nextElementSibling.textContent = parseFloat(this.value).toFixed(1)">
+            <span class="pref-value">{{ "%.1f"|format(weight) }}</span>
+        </div>
+        {% endfor %}
+        <div class="pref-actions">
+            <button type="submit" class="btn btn-primary">Speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="resetPrefs()">Zuruecksetzen</button>
+        </div>
+    </form>
+</div>
+
+<div class="card p-6">
+    <h2>Feedback-Historie</h2>
+    {% if recent_feedback %}
+    <table class="simple-table">
+        <thead>
+            <tr><th>Aktivitaet</th><th>Bewertung</th><th>Datum</th></tr>
+        </thead>
+        <tbody>
+            {% for fb in recent_feedback %}
+            <tr>
+                <td><a href="/activity/{{ fb.activity_id }}">{{ fb.activity_title }}</a></td>
+                <td>{% if fb.rating > 0 %}👍{% else %}👎{% endif %}</td>
+                <td>{{ fb.rated_at[:10] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">Noch kein Feedback abgegeben.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('prefs-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var data = {};
+    this.querySelectorAll('input[type=range]').forEach(function(inp) {
+        data[inp.name] = parseFloat(inp.value);
+    });
+    fetch('/api/preferences', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    }).then(function(r) { return r.json(); })
+      .then(function() { showToast('Gespeichert!'); });
+});
+
+function resetPrefs() {
+    document.querySelectorAll('#prefs-form input[type=range]').forEach(function(inp) {
+        inp.value = 1.0;
+        inp.nextElementSibling.textContent = '1.0';
+    });
+}
+</script>
+{% endblock %}

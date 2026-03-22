@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Kalender — Family Scout{% endblock %}
+{% block content %}
+
+<h1>📅 Veranstaltungskalender</h1>
+
+<div class="filter-bar">
+    <select id="tag-filter" onchange="filterEvents()">
+        <option value="">Alle Kategorien</option>
+        {% for tag in all_tags %}
+        <option value="{{ tag }}">{{ tag }}</option>
+        {% endfor %}
+    </select>
+    <select id="type-filter" onchange="filterEvents()">
+        <option value="">Alle Typen</option>
+        <option value="event">Events</option>
+        <option value="permanent">Dauerhafte</option>
+        <option value="special">Geheimtipps</option>
+    </select>
+</div>
+
+<div class="calendar-grid">
+    {% for day in days %}
+    <div class="calendar-day {% if day.is_today %}today{% endif %}">
+        <div class="day-header">
+            <span class="day-name">{{ day.weekday }}</span>
+            <span class="day-date">{{ day.date_display }}</span>
+        </div>
+        <div class="day-events">
+            {% for evt in day.events %}
+            <a href="/activity/{{ evt.id }}" class="day-event"
+               data-tags="{{ evt.tags|join(',') }}"
+               data-type="{% if evt.is_special %}special{% elif evt.is_permanent %}permanent{% else %}event{% endif %}">
+                <span class="event-dot {% if evt.is_special %}dot-special{% elif evt.is_permanent %}dot-permanent{% endif %}"></span>
+                {{ evt.title|truncate(40) }}
+            </a>
+            {% endfor %}
+            {% if not day.events %}
+            <div class="no-events">Keine Events</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterEvents() {
+    var tag = document.getElementById('tag-filter').value;
+    var type = document.getElementById('type-filter').value;
+    document.querySelectorAll('.day-event').forEach(function(el) {
+        var tags = el.dataset.tags.split(',');
+        var evtType = el.dataset.type;
+        var showTag = !tag || tags.indexOf(tag) >= 0;
+        var showType = !type || evtType === type;
+        el.style.display = (showTag && showType) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

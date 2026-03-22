@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Family Scout — Dashboard{% endblock %}
+{% block content %}
+
+<!-- Hero + Wetter -->
+<section class="hero">
+    <h1>Was machen wir dieses Wochenende?</h1>
+    <div class="weather-widget">
+        <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="Wetter" width="48" height="48">
+        <div>
+            <div class="weather-temp">{{ weather.temp }}°C</div>
+            <div class="weather-desc">{{ weather.description }}{% if weather.rain_prob > 30 %} — {{ weather.rain_prob }}% Regen{% endif %}</div>
+        </div>
+    </div>
+</section>
+
+<!-- Top-5 Vorschlaege -->
+<section class="suggestions">
+    <h2>Top 5 fuer euch</h2>
+    <div class="card-grid">
+        {% for s in suggestions %}
+        <div class="activity-card" data-id="{{ s.id }}">
+            {% if s.image_url %}
+            <div class="card-image" style="background-image: url('{{ s.image_url }}')"></div>
+            {% else %}
+            <div class="card-image card-image-placeholder">
+                {% if 'outdoor' in s.tags %}🌿{% elif 'wasser' in s.tags %}🌊{% elif 'tiere' in s.tags %}🐾{% elif 'kreativ' in s.tags %}🎨{% elif 'wissenschaft' in s.tags %}🔬{% elif 'abenteuer' in s.tags %}🧗{% elif 'sport' in s.tags %}⚽{% elif 'musik' in s.tags %}🎵{% else %}🎯{% endif %}
+            </div>
+            {% endif %}
+            <div class="card-body">
+                {% if s.is_special %}<span class="badge badge-special">Geheimtipp</span>{% endif %}
+                {% if s.is_permanent %}<span class="badge badge-permanent">Dauerhaft</span>{% endif %}
+                <h3><a href="/activity/{{ s.id }}">{{ s.title }}</a></h3>
+                <div class="card-meta">
+                    <span>📍 {{ s.location_name or "Berlin" }}</span>
+                    {% if s.distance_km %}<span>🚗 {{ s.distance_km }} km</span>{% endif %}
+                </div>
+                <div class="card-tags">
+                    {% for tag in s.tags[:4] %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% if s.price_info %}
+                <div class="card-price">{{ s.price_info }}</div>
+                {% endif %}
+                <div class="card-score">
+                    <div class="score-bar"><div class="score-fill" style="width: {{ [s.score, 100]|min }}%"></div></div>
+                    <span class="score-value">{{ s.score|int }}</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-like" onclick="sendFeedback({{ s.id }}, 1, this)" title="Gefaellt uns!">👍</button>
+                    <button class="btn-dislike" onclick="sendFeedback({{ s.id }}, -1, this)" title="Nicht so unser Ding">👎</button>
+                    <button class="btn-done" onclick="markDone({{ s.id }}, this)" title="Schon gemacht!">✅</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Karte -->
+<section class="map-section">
+    <h2>Auf der Karte</h2>
+    <div id="map" style="height: 400px; border-radius: 12px; border: 1px solid rgba(0,240,255,0.15);"></div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var suggestions = {{ suggestions_json|safe }};
+    initMap(suggestions);
+});
+</script>
+{% endblock %}

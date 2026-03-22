@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ activity.title }} — Family Scout{% endblock %}
+{% block content %}
+
+<div class="breadcrumb">
+    <a href="/">← Zurueck</a>
+</div>
+
+<div class="detail-card">
+    <div class="detail-header">
+        <h1>{{ activity.title }}</h1>
+        <div class="detail-badges">
+            {% if activity.is_special %}<span class="badge badge-special">Geheimtipp</span>{% endif %}
+            {% if activity.is_permanent %}<span class="badge badge-permanent">Dauerhaft</span>{% endif %}
+            {% for tag in activity.tags %}
+            <span class="tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="detail-body">
+        <p class="detail-desc">{{ activity.description }}</p>
+
+        <div class="detail-info-grid">
+            <div class="info-item">
+                <span class="info-label">📍 Ort</span>
+                <span>{{ activity.location_name or "?" }}</span>
+            </div>
+            {% if activity.address %}
+            <div class="info-item">
+                <span class="info-label">🏠 Adresse</span>
+                <span>{{ activity.address }}</span>
+            </div>
+            {% endif %}
+            {% if activity.time_info or activity.date_start %}
+            <div class="info-item">
+                <span class="info-label">📅 Wann</span>
+                <span>{{ activity.time_info or activity.date_start }}</span>
+            </div>
+            {% endif %}
+            {% if activity.price_info %}
+            <div class="info-item">
+                <span class="info-label">💰 Preis</span>
+                <span>{{ activity.price_info }}</span>
+            </div>
+            {% endif %}
+            {% if activity.distance_km %}
+            <div class="info-item">
+                <span class="info-label">🚗 Entfernung</span>
+                <span>{{ activity.distance_km }} km</span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <span class="info-label">👶 Alter</span>
+                <span>{{ activity.age_min }}–{{ activity.age_max }} Jahre</span>
+            </div>
+        </div>
+
+        {% if activity.lat and activity.lon %}
+        <div id="detail-map" style="height: 300px; border-radius: 12px; margin-top: 20px; border: 1px solid rgba(0,240,255,0.15);"></div>
+        {% endif %}
+
+        <div class="detail-actions">
+            <button class="btn btn-primary" onclick="sendFeedback({{ activity.id }}, 1, this)">👍 Gefaellt uns!</button>
+            <button class="btn btn-secondary" onclick="sendFeedback({{ activity.id }}, -1, this)">👎 Nicht unser Ding</button>
+            <button class="btn btn-done" onclick="markDone({{ activity.id }}, this)">✅ Schon gemacht</button>
+            {% if activity.source_url %}
+            <a href="{{ activity.source_url }}" target="_blank" class="btn btn-link">🔗 Mehr Info</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{% if activity.lat and activity.lon %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var map = L.map('detail-map').setView([{{ activity.lat }}, {{ activity.lon }}], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    L.marker([{{ activity.lat }}, {{ activity.lon }}])
+        .addTo(map)
+        .bindPopup('<b>{{ activity.title }}</b>')
+        .openPopup();
+});
+</script>
+{% endif %}
+{% endblock %}
