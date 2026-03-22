@@ -10,7 +10,7 @@ class BerlinMitKindScraper(BaseScraper):
     """Scrapt Familien-Events von berlinmitkind.de."""
 
     name = "berlinmitkind"
-    BASE_URL = "https://berlinmitkind.de/veranstaltungen/"
+    BASE_URL = "https://berlinmitkind.de/veranstaltungskalender/"
 
     def scrape(self) -> list[dict]:
         items = []
