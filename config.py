@@ -36,8 +36,10 @@ def load_credentials() -> dict[str, str]:
 
 _creds = load_credentials()
 
-TELEGRAM_BOT_TOKEN = _creds.get("TELEGRAM_BOT_TOKEN", "")
-FAMILY_CHAT_ID = _creds.get("FAMILY_CHAT_ID", "")
+# Primaer: AscontiLab Bot, Fallback: alter TELEGRAM_BOT_TOKEN
+TELEGRAM_BOT_TOKEN = _creds.get("ASCONTILAB_BOT_TOKEN", "") or _creds.get("TELEGRAM_BOT_TOKEN", "")
+# FAMILY_CHAT_ID = Maik's Chat-ID (identisch mit ASCONTILAB_CHAT_ID)
+FAMILY_CHAT_ID = _creds.get("ASCONTILAB_CHAT_ID", "") or _creds.get("FAMILY_CHAT_ID", "")
 OPENWEATHER_API_KEY = _creds.get("OPENWEATHER_API_KEY", "")
 
 # ---------------------------------------------------------------------------
