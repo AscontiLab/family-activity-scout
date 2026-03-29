@@ -14,6 +14,61 @@
     </div>
 </section>
 
+<!-- Wochenend-Planer -->
+<section class="weekend-planner">
+    <h2>Konkreter Plan fuer dieses Wochenende</h2>
+    {% if weekend_plan %}
+    <div class="planner-grid">
+        {% for slot in weekend_plan %}
+        {% set primary = slot.primary %}
+        <article class="planner-card" data-id="{{ primary.id }}">
+            <div class="planner-head">
+                <div>
+                    <div class="planner-day">{{ slot.label }}</div>
+                    <div class="planner-date">{{ slot.date_display }}</div>
+                </div>
+                <div class="planner-pill">Plan A</div>
+            </div>
+            <h3><a href="/activity/{{ primary.id }}">{{ primary.title }}</a></h3>
+            <div class="planner-meta">
+                <span>📍 {{ primary.location_name or "Berlin" }}</span>
+                {% if primary.distance_km %}<span>🚗 {{ primary.distance_km }} km</span>{% endif %}
+                {% if primary.time_info %}<span>🕒 {{ primary.time_info }}</span>{% endif %}
+            </div>
+            <div class="card-tags">
+                {% for tag in primary.tags[:4] %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% if primary.price_info %}
+            <div class="card-price">{{ primary.price_info }}</div>
+            {% endif %}
+            <p class="planner-reason">
+                {% if primary.is_special %}Zeitlich stark und als Geheimtipp markiert.{% elif primary.is_permanent %}Solide Wochenend-Option mit hoher Passung.{% else %}Hoher Score fuer eure aktuellen Vorlieben und das Wetter.{% endif %}
+            </p>
+            <div class="card-actions">
+                <button class="btn-like" onclick="sendFeedback({{ primary.id }}, 1, this)" title="Passt gut">👍</button>
+                <button class="btn-dislike" onclick="sendFeedback({{ primary.id }}, -1, this)" title="Eher nicht">👎</button>
+                <button class="btn-done" onclick="markDone({{ primary.id }}, this)" title="Schon gemacht">✅</button>
+            </div>
+            {% if slot.backup %}
+            <div class="planner-backup">
+                <div class="planner-backup-label">{{ slot.weather_hint or "Backup" }}</div>
+                <a href="/activity/{{ slot.backup.id }}">{{ slot.backup.title }}</a>
+                <span>
+                    {{ slot.backup.location_name or "Berlin" }}
+                    {% if slot.backup.distance_km %} · {{ slot.backup.distance_km }} km{% endif %}
+                </span>
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card p-6 text-muted">Im Moment gibt es noch keinen klaren Samstag/Sonntag-Plan. Starte einen Scrape-Lauf oder pruefe spaeter erneut.</div>
+    {% endif %}
+</section>
+
 <!-- Top-5 Vorschlaege -->
 <section class="suggestions">
     <h2>Top 5 fuer euch</h2>

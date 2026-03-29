@@ -1,6 +1,6 @@
 /* Family Activity Scout — Dark + Gold Design */
 :root {
-    --bg: #0a0a1a;
+    --bg: #08080f;
     --surface: rgba(15, 15, 35, 0.85);
     --border: rgba(0, 240, 255, 0.12);
     --cyan: #00f0ff;
@@ -57,6 +57,44 @@ body {
 .weather-widget { display: flex; align-items: center; gap: 8px; }
 .weather-temp { font-size: 1.3em; font-weight: 700; color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
 .weather-desc { font-size: 0.85em; color: var(--text-muted); }
+
+/* Weekend Planner */
+.planner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.planner-card {
+    background: linear-gradient(180deg, rgba(200,170,110,0.08), rgba(0,240,255,0.03));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    backdrop-filter: blur(16px);
+}
+.planner-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.planner-day { color: var(--gold); font-weight: 700; font-size: 1.05em; }
+.planner-date { color: var(--text-muted); font-size: 0.82em; font-family: 'JetBrains Mono', monospace; }
+.planner-pill {
+    border: 1px solid rgba(0,240,255,0.2);
+    color: var(--cyan);
+    background: rgba(0,240,255,0.08);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.74em;
+    font-weight: 700;
+}
+.planner-card h3 { margin-bottom: 10px; font-size: 1.1em; }
+.planner-card h3 a { color: var(--text); text-decoration: none; }
+.planner-card h3 a:hover { color: var(--cyan); }
+.planner-meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--text-muted); font-size: 0.82em; margin-bottom: 10px; }
+.planner-reason { color: var(--text-muted); font-size: 0.9em; line-height: 1.5; margin-bottom: 12px; }
+.planner-backup {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.planner-backup-label { color: var(--gold); font-size: 0.74em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.planner-backup a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+.planner-backup span { color: var(--text-muted); font-size: 0.82em; }
 
 /* Section Headers */
 section { margin-bottom: 32px; }

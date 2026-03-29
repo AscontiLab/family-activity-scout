@@ -16,7 +16,7 @@ function initMap(suggestions) {
         var color = s.is_special ? '#ff006e' : (s.is_permanent ? '#00ff88' : '#00f0ff');
         var icon = L.divIcon({
             className: 'custom-marker',
-            html: '<div style="background:' + color + ';width:12px;height:12px;border-radius:50%;border:2px solid #0a0a1a;box-shadow:0 0 8px ' + color + '"></div>',
+            html: '<div style="background:' + color + ';width:12px;height:12px;border-radius:50%;border:2px solid #08080f;box-shadow:0 0 8px ' + color + '"></div>',
             iconSize: [16, 16],
             iconAnchor: [8, 8]
         });

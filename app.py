@@ -15,7 +15,7 @@ from models import (
     get_preferences, update_preferences, add_feedback, mark_done,
     get_done_ids, deactivate_expired,
 )
-from scoring import compute_scores, get_weekend_mix
+from scoring import build_weekend_plan, compute_scores, get_weekend_mix
 from weather import get_forecast
 from scrapers import run_all_scrapers
 
@@ -41,26 +41,61 @@ def _get_suggestions(count: int = 5) -> list[dict]:
     return get_weekend_mix(scored, count)
 
 
+def _get_dashboard_data() -> tuple[dict, list[dict], list[dict], str]:
+    """Liefert Wetter, Planer, Vorschlaege und Kartenpunkte fuer das Dashboard."""
+    activities = get_active_activities()
+    prefs = get_preferences()
+    weather = get_forecast()
+    done_ids = get_done_ids()
+    scored = compute_scores(activities, prefs, weather, done_ids)
+    weekend_plan = build_weekend_plan(scored, weather)
+    suggestions = get_weekend_mix(scored, 5)
+
+    map_items: list[dict] = []
+    seen_ids: set[int] = set()
+    for slot in weekend_plan:
+        for item in (slot.get("primary"), slot.get("backup")):
+            if item and item["id"] not in seen_ids:
+                seen_ids.add(item["id"])
+                map_items.append(item)
+    for item in suggestions:
+        if item["id"] not in seen_ids:
+            seen_ids.add(item["id"])
+            map_items.append(item)
+
+    suggestions_json = json.dumps(
+        [
+            {
+                "id": item["id"],
+                "title": item["title"],
+                "lat": item.get("lat"),
+                "lon": item.get("lon"),
+                "location_name": item.get("location_name", ""),
+                "distance_km": item.get("distance_km"),
+                "is_special": item.get("is_special", 0),
+                "is_permanent": item.get("is_permanent", 0),
+            }
+            for item in map_items
+        ],
+        ensure_ascii=False,
+    )
+    return weather, weekend_plan, suggestions, suggestions_json
+
+
 # ───────────────────────────────────────────────────────────────
 # HTML Routes
 # ───────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    weather = get_forecast()
-    suggestions = _get_suggestions(5)
+    weather, weekend_plan, suggestions, suggestions_json = _get_dashboard_data()
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "page": "dashboard",
         "weather": weather,
+        "weekend_plan": weekend_plan,
         "suggestions": suggestions,
-        "suggestions_json": json.dumps(
-            [{"id": s["id"], "title": s["title"], "lat": s.get("lat"), "lon": s.get("lon"),
-              "location_name": s.get("location_name", ""), "distance_km": s.get("distance_km"),
-              "is_special": s.get("is_special", 0), "is_permanent": s.get("is_permanent", 0)}
-             for s in suggestions],
-            ensure_ascii=False,
-        ),
+        "suggestions_json": suggestions_json,
     })
 
 

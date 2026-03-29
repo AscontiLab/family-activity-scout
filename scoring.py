@@ -2,7 +2,7 @@
 
 import json
 import math
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 
 from config import (
     HOME_LAT, HOME_LON, CHILDREN_AGE,
@@ -240,3 +240,84 @@ def get_weekend_mix(scored_activities: list[dict], count: int = 10) -> list[dict
                 seen_ids.add(item["id"])
 
     return mix[:count]
+
+
+def get_upcoming_weekend_dates(reference: datetime | None = None) -> tuple[date, date]:
+    """Liefert Samstag und Sonntag fuer das aktuelle oder naechste Wochenende."""
+    if reference is None:
+        reference = datetime.now(timezone.utc)
+    today = reference.date()
+    weekday = today.weekday()
+    if weekday == 5:
+        saturday = today
+    elif weekday == 6:
+        saturday = today - timedelta(days=1)
+    else:
+        saturday = today + timedelta(days=5 - weekday)
+    return saturday, saturday + timedelta(days=1)
+
+
+def is_activity_available_on_day(activity: dict, target_day: date) -> bool:
+    """Prueft, ob eine Aktivitaet am Zieldatum sinnvoll verfuegbar ist."""
+    if activity.get("is_permanent"):
+        return target_day.weekday() in (5, 6)
+
+    date_start = (activity.get("date_start") or "")[:10]
+    date_end = (activity.get("date_end") or date_start)[:10]
+    target_str = target_day.isoformat()
+
+    if date_start:
+        return date_start <= target_str <= date_end
+
+    scraped_at = activity.get("scraped_at")
+    if not scraped_at:
+        return False
+    try:
+        scraped_dt = datetime.fromisoformat(scraped_at)
+    except (TypeError, ValueError):
+        return False
+    return (datetime.now(timezone.utc) - scraped_dt) <= timedelta(days=14)
+
+
+def build_weekend_plan(scored_activities: list[dict], weather: dict | None = None) -> list[dict]:
+    """Baut einen konkreten Samstag/Sonntag-Plan mit Backup-Idee."""
+    saturday, sunday = get_upcoming_weekend_dates()
+    weekend_days = [
+        {"key": "saturday", "label": "Samstag", "date": saturday},
+        {"key": "sunday", "label": "Sonntag", "date": sunday},
+    ]
+    rainy_weekend = bool(weather and (weather.get("rain_prob", 0) > 60 or weather.get("temp", 15) < 5))
+    plan: list[dict] = []
+    used_ids: set[int] = set()
+
+    for day in weekend_days:
+        available = [
+            activity for activity in scored_activities
+            if activity["id"] not in used_ids and is_activity_available_on_day(activity, day["date"])
+        ]
+        if not available:
+            continue
+
+        primary = available[0]
+        used_ids.add(primary["id"])
+
+        backup = None
+        preferred_tag = "indoor" if rainy_weekend else "outdoor"
+        for candidate in available[1:]:
+            if preferred_tag in candidate.get("tags", []):
+                backup = candidate
+                break
+        if backup is None and len(available) > 1:
+            backup = available[1]
+
+        plan.append({
+            "key": day["key"],
+            "label": day["label"],
+            "date_iso": day["date"].isoformat(),
+            "date_display": day["date"].strftime("%d.%m."),
+            "primary": primary,
+            "backup": backup,
+            "weather_hint": "Regenfester Backup" if rainy_weekend and backup else ("Outdoor-Backup" if backup else None),
+        })
+
+    return plan
