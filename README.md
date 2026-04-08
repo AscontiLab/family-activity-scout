@@ -17,6 +17,16 @@ Schlaegt Veranstaltungen, Ausfluege und Aktivitaeten vor — lernt aus Feedback,
 - **Kalender** — 14-Tage-Vorschau mit Filtern
 - **Dark+Gold Design** — Einheitliches Design wie alle AscontiLab-Dashboards
 
+## Bestandteile
+
+- `app.py` — FastAPI-App, Routen, Templates
+- `models.py` — SQLAlchemy-Modelle, DB-Init
+- `scoring.py` — Scoring-Algorithmus, Diversity-Filter
+- `config.py` — Konfiguration, API-Keys
+- `weather.py` — OpenWeatherMap-Integration
+- `telegram_alerts.py` — Telegram-Bot-Benachrichtigungen
+- `run_scraper.sh` — Scraper-Wrapper
+
 ## Tech-Stack
 
 | Komponente | Technologie |
