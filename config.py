@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from scanner_common import load_credentials
+
 # ---------------------------------------------------------------------------
 # Pfade
 # ---------------------------------------------------------------------------
@@ -19,21 +21,6 @@ HOST = "0.0.0.0"
 # ---------------------------------------------------------------------------
 # Credentials aus ~/.stock_scanner_credentials laden
 # ---------------------------------------------------------------------------
-CREDENTIALS_FILE = Path.home() / ".stock_scanner_credentials"
-
-
-def load_credentials() -> dict[str, str]:
-    """Liest KEY=VALUE Paare aus der Credentials-Datei."""
-    creds: dict[str, str] = {}
-    if CREDENTIALS_FILE.exists():
-        for line in CREDENTIALS_FILE.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                creds[key.strip()] = value.strip()
-    return creds
-
-
 _creds = load_credentials()
 
 # Primaer: AscontiLab Bot, Fallback: alter TELEGRAM_BOT_TOKEN
