@@ -22,7 +22,7 @@ Schlaegt Veranstaltungen, Ausfluege und Aktivitaeten vor — lernt aus Feedback,
 - `app.py` — FastAPI-App, Routen, Templates
 - `models.py` — SQLAlchemy-Modelle, DB-Init
 - `scoring.py` — Scoring-Algorithmus, Diversity-Filter
-- `config.py` — Konfiguration, API-Keys
+- `config.py` — Konfiguration, API-Keys (Credentials via `scanner-common`-Paket)
 - `weather.py` — OpenWeatherMap-Integration
 - `telegram_alerts.py` — Telegram-Bot-Benachrichtigungen
 - `run_scraper.sh` — Scraper-Wrapper
@@ -79,7 +79,7 @@ Diversity-Filter: Max 2 pro Kategorie (Auffuehrung, Museum, Klettern, etc.)
 # Abhaengigkeiten (in venv oder mit --break-system-packages)
 pip install -r requirements.txt
 
-# API Keys in ~/.stock_scanner_credentials eintragen:
+# API Keys in ~/.stock_scanner_credentials (geladen via scanner-common):
 # OPENWEATHER_API_KEY=...
 # TELEGRAM_BOT_TOKEN=...
 # FAMILY_CHAT_ID=...
